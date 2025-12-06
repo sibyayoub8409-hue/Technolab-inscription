@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Gestion des Inscriptions</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f9;
+        padding: 20px;
+    }
+
+    h1 {
+        text-align: center;
+        color: #0275d8;
+    }
+
+    .box {
+        background: white;
+        width: 90%;
+        max-width: 900px;
+        margin: 25px auto;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+
+    input {
+        width: 30%;
+        padding: 10px;
+        margin: 6px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+    }
+
+    #search {
+        width: 96%;
+        border: 2px solid #0275d8;
+        margin-top: 10px;
+        margin-bottom: 15px;
+    }
+
+    button {
+        padding: 10px 20px;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        cursor: pointer;
+    }
+
+    #addBtn {
+        background: #0275d8;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    table {
+        width: 100%;
+        margin-top: 25px;
+        border-collapse: collapse;
+    }
+
+    th, td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+
+    tr:nth-child(even) {
+        background: #f9f9f9;
+    }
+
+    tr:hover {
+        background: #e8f4ff;
+    }
+
+    .editBtn {
+        background: #5cb85c;
+    }
+
+    .deleteBtn {
+        background: #d9534f;
+    }
+
+    .modal-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .modal-box {
+        background: white;
+        padding: 20px;
+        width: 350px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        text-align: center;
+    }
+
+    .modal-box input {
+        width: 90%;
+    }
+
+    .closeBtn {
+        background: #d9534f;
+        margin-top: 10px;
+    }
+
+</style>
+
+</head>
+<body>
+
+<h1>Gestion des Inscriptions - TECHLAB ISTA</h1>
+
+<div class="box">
+
+    <!-- FORMULAIRE -->
+    <input type="text" id="nom" placeholder="Nom">
+    <input type="text" id="prenom" placeholder="Prénom">
+    <input type="text" id="etablissement" placeholder="Établissement">
+    <input type="text" id="contact" placeholder="Contact">
+    <input type="text" id="filiere" placeholder="Filière">
+    <button id="addBtn">Ajouter</button>
+
+    <!-- 🔍 RECHERCHE -->
+    <input type="text" id="search" placeholder="Rechercher...">
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Établissement</th>
+                <th>Contact</th>
+                <th>Filière</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modal">
+    <div class="modal-box">
+        <h3>Modifier</h3>
+        <input type="text" id="editNom">
+        <input type="text" id="editPrenom">
+        <input type="text" id="editEta">
+        <input type="text" id="editContact">
+        <input type="text" id="editFiliere">
+
+        <button id="saveEdit" style="background:#0275d8">Enregistrer</button>
+        <button class="closeBtn" onclick="closeModal()">Annuler</button>
+    </div>
+</div>
+
+
+<script>
+const API = "http://localhost:3003/inscription";
+let editId = null;
+let allData = [];
+
+// Charger
+async function charger() {
+    const res = await fetch(API);
+    allData = await res.json();
+    afficher(allData);
+}
+
+// Afficher
+function afficher(data) {
+    const body = document.getElementById("tableBody");
+    body.innerHTML = "";
+
+    data.forEach(item => {
+        body.innerHTML += `
+            <tr>
+                <td>${item.nom}</td>
+                <td>${item.prenom}</td>
+                <td>${item.etablissement}</td>
+                <td>${item.contact}</td>
+                <td>${item.filiere}</td>
+                <td>
+                    <button class="editBtn" onclick="openModal('${item.id}',
+                    '${item.nom}', '${item.prenom}', '${item.etablissement}',
+                    '${item.contact}', '${item.filiere}')">Modifier</button>
+
+                    <button class="deleteBtn" onclick="supprimer('${item.id}')">Supprimer</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+// Ajouter
+document.getElementById("addBtn").onclick = async () => {
+    const nom = nom.value.trim();
+    const prenom = prenom.value.trim();
+    const eta = etablissement.value.trim();
+    const contactVal = contact.value.trim();
+    const filiereVal = filiere.value.trim();
+
+    if (!nom || !prenom || !eta || !contactVal || !filiereVal)
+        return alert("Remplis tous les champs !");
+
+    await fetch(API, {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            nom, prenom,
+            etablissement: eta,
+            contact: contactVal,
+            filiere: filiereVal
+        })
+    });
+
+    charger();
+};
+
+// Supprimer
+async function supprimer(id) {
+    if (!confirm("Supprimer ?")) return;
+
+    await fetch(`${API}/${id}`, { method: "DELETE" });
+    charger();
+}
+
+// Modal ouvrir
+function openModal(id, nom, prenom, eta, contact, filiere) {
+    editId = id;
+    editNom.value = nom;
+    editPrenom.value = prenom;
+    editEta.value = eta;
+    editContact.value = contact;
+    editFiliere.value = filiere;
+
+    modal.style.display = "flex";
+}
+
+// Modal fermer
+function closeModal() {
+    modal.style.display = "none";
+}
+
+// Sauvegarder modification
+saveEdit.onclick = async () => {
+    await fetch(`${API}/${editId}`, {
+        method: "PUT",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            nom: editNom.value,
+            prenom: editPrenom.value,
+            etablissement: editEta.value,
+            contact: editContact.value,
+            filiere: editFiliere.value
+        })
+    });
+
+    closeModal();
+    charger();
+};
+
+// Recherche
+document.getElementById("search").addEventListener("keyup", () => {
+    const q = search.value.toLowerCase();
+
+    const filtered = allData.filter(item =>
+        item.nom.toLowerCase().includes(q) ||
+        item.prenom.toLowerCase().includes(q) ||
+        item.etablissement.toLowerCase().includes(q) ||
+        item.contact.toLowerCase().includes(q) ||
+        item.filiere.toLowerCase().includes(q)
+    );
+
+    afficher(filtered);
+});
+
+charger();
+</script>
+
+</body>
+</html>
